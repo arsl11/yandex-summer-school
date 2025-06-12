@@ -201,7 +201,6 @@ declare function clampUnit<T>(currentValue: T, maxValue: number): T;
 // каждый раз придётся заново уточнять её результат с помощью оператора `as`
 
 function clampSpeedExample(playerSpeed: MoveSpeed): MoveSpeed {
-    // @ts-expect-error 🚧 `clampUnit` должен вернуть `MoveSpeed`, но
     // возвращает `number` из-за своей декларации
     const speed: MoveSpeed = clampUnit(playerSpeed, 9);
     return speed;
@@ -235,10 +234,12 @@ type NinjaArtifact = {
 // все возможные комбинации артефактов. Вам нужно придумать *общий* тип,
 // который будет смешивать два артефакта в один `"MIXED"`.
 
-type MixedArtifact = {
-    id: "MIXED";
-    components: [];
-};
+type MixedArtifact<T extends Artifact, K extends Artifact> = 
+    (T | K) extends { id: "MIXED" } ? CheeseArtifact : 
+    {
+        id: "MIXED";
+        components: [T["id"], K["id"]];
+    };
 
 // 🎯 Цель: доработайте объявление типа `MixedArtifact` так, чтобы он принимал
 // 2 других артефакта (`Artifact`!) и помещал их идентификаторы в поле
@@ -282,7 +283,12 @@ type Difficulty = "peaceful" | "easy" | "normal" | "hard" | "impossible";
 // `'normal'` нужно отдать `'hard'` и так далее. На вход `'impossible'` стоит
 // оставить сложность на том же уровне.
 
-type IncreasedDifficulty = "peaceful -> easy" | "easy -> normal" | "✨ -> ✨";
+type IncreasedDifficulty<T extends Difficulty> = 
+    T extends "peaceful" ? "easy" :
+    T extends "easy" ? "normal" :
+    T extends "normal" ? "hard" :
+    T extends "hard" ? "impossible" :
+    "impossible";
 
 // 🚧: `IncreasedDifficulty` должен принимать только `Difficulty` - на обычную
 // строку и другие данные тип должен отдать ошибку компиляции.
@@ -309,6 +315,7 @@ type EvilNinjaPlayer = {
     artifacts: [HealthUpArtifact, NinjaArtifact, DarkDamageUp];
 };
 
+// type TotalDifficulty<T extends Artifact[], K extends "peaceful"> = 
 // У `EvilNinjaPlayer` есть один тёмный артефакт. Значит, если текущая базовая
 // сложность игры `'normal'`, то для `EvilNinjaPlayer` она поднимется до
 // `'hard'`. А если он подберёт ещё один тёмный артефакт - до `'impossible'`
