@@ -25,7 +25,8 @@ type WelcomeToContest = 'hi!';
 // по-разному влиять на игрока.
 
 type Artifact = {
-    id: "HEALTH_UP" | "DAMAGE_UP" | "SPEED_UP"; // | ✨
+    id: "HEALTH_UP" | "DAMAGE_UP" | "SPEED_UP" 
+    // | "MIXED"; // | ✨
     // Внимание, магия (✨) контеста! При проверке задачи тип `Artifact` будет
     // отличаться - в него добавится больше вариантов `id`! Ваш код должен
     // работать не только на ваших данных, но и на неизвестных!
@@ -235,12 +236,14 @@ type NinjaArtifact = {
 // который будет смешивать два артефакта в один `"MIXED"`.
 
 type MixedArtifact<T extends Artifact, K extends Artifact> = 
-    (T | K) extends { id: "MIXED" } ? CheeseArtifact : 
+    T["id"] extends "MIXED" ? CheeseArtifact :
+    K["id"] extends "MIXED" ? CheeseArtifact :
     {
         id: "MIXED";
         components: [T["id"], K["id"]];
-    };
+    }
 
+// type TestArtifact = MixedArtifact<DamageUpArtifact, NinjaArtifact>
 // 🎯 Цель: доработайте объявление типа `MixedArtifact` так, чтобы он принимал
 // 2 других артефакта (`Artifact`!) и помещал их идентификаторы в поле
 // `components` (в том же порядке, в котором ему передали).
@@ -282,13 +285,15 @@ type Difficulty = "peaceful" | "easy" | "normal" | "hard" | "impossible";
 // вариант `Difficulty` и возвращает сложность на уровень выше! На вход
 // `'normal'` нужно отдать `'hard'` и так далее. На вход `'impossible'` стоит
 // оставить сложность на том же уровне.
+type DifficultyMap = {
+    peaceful: "easy";
+    easy: "normal";
+    normal: "hard";
+    hard: "impossible";
+    impossible: "impossible";
+}
 
-type IncreasedDifficulty<T extends Difficulty> = 
-    T extends "peaceful" ? "easy" :
-    T extends "easy" ? "normal" :
-    T extends "normal" ? "hard" :
-    T extends "hard" ? "impossible" :
-    "impossible";
+type IncreasedDifficulty<T extends Difficulty> = DifficultyMap[T]
 
 // 🚧: `IncreasedDifficulty` должен принимать только `Difficulty` - на обычную
 // строку и другие данные тип должен отдать ошибку компиляции.
@@ -315,7 +320,17 @@ type EvilNinjaPlayer = {
     artifacts: [HealthUpArtifact, NinjaArtifact, DarkDamageUp];
 };
 
-// type TotalDifficulty<T extends Artifact[], K extends "peaceful"> = 
+type TotalDifficulty<
+    Artifacts extends Artifact[], 
+    CurrentDifficulty extends Difficulty = "peaceful"
+> = 
+    Artifacts extends [infer First, ...infer Rest] ?
+    First extends { isDark: true } ?
+    TotalDifficulty<Rest extends Artifact[] ? Rest : [], IncreasedDifficulty<CurrentDifficulty>> :
+    TotalDifficulty<Rest extends Artifact[] ? Rest : [], CurrentDifficulty> :
+    CurrentDifficulty
+
+// type EvilNinjaDifficulty = TotalDifficulty<EvilNinjaPlayer["artifacts"], "normal">
 // У `EvilNinjaPlayer` есть один тёмный артефакт. Значит, если текущая базовая
 // сложность игры `'normal'`, то для `EvilNinjaPlayer` она поднимется до
 // `'hard'`. А если он подберёт ещё один тёмный артефакт - до `'impossible'`
